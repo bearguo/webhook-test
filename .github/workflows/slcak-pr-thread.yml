@@ -27,7 +27,7 @@ jobs:
                 "text": "A new Pull Request has been created:\n*Title:* '"$PR_TITLE"'\n*Number:* #'"$PR_NUMBER"'\n*URL:* <'"$PR_URL"'>",
                 "channel": "#your-channel-name"
               }' $SLACK_WEBHOOK > response.json
-
+            cat response.json
             # 提取 Thread ID (ts)
             cat response.json | jq -r '.ts' > thread_id.txt
 
