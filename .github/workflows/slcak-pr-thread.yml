@@ -1,0 +1,45 @@
+name: Notify Slack on PR Events
+
+on:
+  pull_request:
+    types: [opened, synchronize] # 触发 PR 创建和新增 commit 的事件
+
+env:
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+jobs:
+  notify_slack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Slack Notification
+        id: notify
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          ACTION="${{ github.event.action }}"
+
+          if [ "$ACTION" == "opened" ]; then
+            # 创建 PR 消息
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{
+                "text": "A new Pull Request has been created:\n*Title:* '"$PR_TITLE"'\n*Number:* #'"$PR_NUMBER"'\n*URL:* <'"$PR_URL"'>",
+                "channel": "#your-channel-name"
+              }' $SLACK_WEBHOOK > response.json
+
+            # 提取 Thread ID (ts)
+            cat response.json | jq -r '.ts' > thread_id.txt
+
+          elif [ "$ACTION" == "synchronize" ]; then
+            # 在已有的线程中回复消息
+            THREAD_ID=$(cat thread_id.txt || echo "")
+            if [ -n "$THREAD_ID" ]; then
+              curl -X POST -H 'Content-type: application/json' \
+                --data '{
+                  "text": "New commit added to PR #'"$PR_NUMBER"': <'"$PR_URL"'>",
+                  "channel": "#your-channel-name",
+                  "thread_ts": "'"$THREAD_ID"'"
+                }' $SLACK_WEBHOOK
+            fi
+          fi
