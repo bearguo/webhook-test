@@ -15,18 +15,49 @@ jobs:
         id: set-vars
         run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
 
+      - name: Validate PR title
+        id: validate-title
+        run: |
+          if [[ ! "${{ github.event.pull_request.title }}" =~ CRM-[0-9]+ ]]; then
+            echo "PR title does not match the required pattern."
+            exit 1
+          fi
+
       - name: Send Slack Notification on PR Opened
         if: ${{ github.event.action == 'opened' }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_EVENT_PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
         run: |
           MESSAGE="📢 *New Pull Request Created*:\n- *Title*: ${GITHUB_EVENT_PULL_REQUEST_TITLE}\n- *Author*: ${GITHUB_ACTOR}\n- *URL*: ${GITHUB_EVENT_PULL_REQUEST_HTML_URL}"
           RESPONSE=$(curl -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H "Content-type: application/json" \
             --data "{\"channel\":\"$SLACK_CHANNEL_ID\",\"text\":\"$MESSAGE\"}" \
             https://slack.com/api/chat.postMessage)
-          echo "MESSAGE_TS=$(echo $RESPONSE | jq -r '.ts')" >> $GITHUB_ENV
-          echo "SLACK_THREAD_TS=${{ env.MESSAGE_TS }}" >> $GITHUB_ENV
+          echo "MESSAGE_TS=$(echo $RESPONSE | jq -r '.ts')" >> slack-thread-ts.txt
+
+      - name: Save Slack Thread Timestamp to Cache
+        if: ${{ github.event.action == 'opened' }}
+        id: save-cache
+        uses: actions/cache/save@v4
+        with:
+          path: slack-thread-ts.txt
+          key: slack-thread-ts-${{ github.event.pull_request.number }}
+
+
+      - name: Restore Slack Thread Timestamp from Cache
+        id: restore-cache
+        if: ${{ github.event.action == 'synchronize' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: slack-thread-ts.txt
+          key: slack-thread-ts-${{ github.event.pull_request.number }}
+
+      - name: Load Slack Thread Timestamp
+        if: ${{ github.event.action == 'synchronize' && steps.restore-cache.outputs.cache-hit == 'true' }}
+        id: load-cache
+        run: echo "SLACK_THREAD_TS=$(cat slack-thread-ts.txt)" >> $GITHUB_ENV
 
       - name: Add Reply for New Commits
         if: ${{ github.event.action == 'synchronize' }}
