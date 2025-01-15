@@ -12,6 +12,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: 恢复缓存（尝试加载 thread_id.txt 文件）
+      - name: Restore Cache
+        id: cache-thread-id
+        uses: actions/cache@v3
+        with:
+          path: thread_id.txt  # 缓存的文件路径
+          key: thread-id-${{ github.event.pull_request.number }}
+          restore-keys: |
+            thread-id-
+
+      # Step 2: 如果是 PR 创建，保存 Thread ID
+      - name: Save Thread ID on PR creation
+        if: ${{ github.event.action == 'opened' }}
+        run: |
+          echo "Generating and saving thread_id..."
+          THREAD_ID="your-slack-thread-id" # 替换为真实的 thread_id
+          echo "$THREAD_ID" > thread_id.txt
+
+      # Step 3: 如果是同步（新增 commit），加载 Thread ID
+      - name: Load Thread ID on commit
+        if: ${{ github.event.action == 'synchronize' }}
+        run: |
+          if [ -f thread_id.txt ]; then
+            THREAD_ID=$(cat thread_id.txt)
+            echo "Loaded Thread ID: $THREAD_ID"
+          else
+            echo "Error: thread_id.txt not found in cache"
+            exit 1
+          fi
+
+      # Step 4: 保存缓存（将 thread_id.txt 保存到缓存中）
+      - name: Save Cache
+        if: ${{ github.event.action == 'opened' }}
+        uses: actions/cache@v3
+        with:
+          path: thread_id.txt
+          key: thread-id-${{ github.event.pull_request.number }}
+
       - name: Send Slack Notification
         id: notify
         run: |
