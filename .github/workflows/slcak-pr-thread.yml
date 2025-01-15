@@ -4,7 +4,7 @@ on:
   pull_request:
     types:
       - opened
-      - synchronize # PR 有新 Commit 时触发
+      - synchronize
 
 jobs:
   notify-slack:
@@ -30,6 +30,7 @@ jobs:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_EVENT_PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
+          GITHUB_EVENT_PULL_REQUEST_HTML_URL: ${{ github.event.pull_request.html_url }}
         run: |
           MESSAGE="📢 *New Pull Request Created*:\n- *Title*: ${GITHUB_EVENT_PULL_REQUEST_TITLE}\n- *Author*: ${GITHUB_ACTOR}\n- *URL*: ${GITHUB_EVENT_PULL_REQUEST_HTML_URL}"
           RESPONSE=$(curl -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H "Content-type: application/json" \
