@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
+
       - name: Validate PR title
         id: validate-title
         run: |
@@ -25,7 +26,7 @@ jobs:
         if: ${{ github.event.action == 'opened' && steps.validate-title.outputs.valid == 'true' }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          SLACK_CHANNEL_ID: C07VDNVTWDR
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_EVENT_PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
           GITHUB_EVENT_PULL_REQUEST_HTML_URL: ${{ github.event.pull_request.html_url }}
