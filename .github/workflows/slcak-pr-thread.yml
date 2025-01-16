@@ -16,11 +16,13 @@ jobs:
         run: |
           if [[ ! "${{ github.event.pull_request.title }}" =~ CRM-[0-9]+ ]]; then
             echo "PR title does not match the required pattern."
+            echo "::set-output name=valid::false"
             exit 1
           fi
+          echo "::set-output name=valid::true"
 
       - name: Send Slack Notification on PR Opened
-        if: ${{ github.event.action == 'opened' }}
+        if: ${{ github.event.action == 'opened' && steps.validate-title.outputs.valid == 'true' }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
@@ -35,7 +37,7 @@ jobs:
           echo "MESSAGE_TS=$(echo $RESPONSE | jq -r '.ts')" >> slack-thread-ts.txt
 
       - name: Save Slack Thread Timestamp to Cache
-        if: ${{ github.event.action == 'opened' }}
+        if: ${{ github.event.action == 'opened' && steps.validate-title.outputs.valid == 'true' }}
         id: save-cache
         uses: actions/cache/save@v4
         with:
@@ -45,19 +47,19 @@ jobs:
 
       - name: Restore Slack Thread Timestamp from Cache
         id: restore-cache
-        if: ${{ github.event.action == 'synchronize' }}
+        if: ${{ github.event.action == 'synchronize' && steps.validate-title.outputs.valid == 'true' }}
         uses: actions/cache/restore@v4
         with:
           path: slack-thread-ts.txt
           key: slack-thread-ts-${{ github.event.pull_request.number }}
 
       - name: Load Slack Thread Timestamp
-        if: ${{ github.event.action == 'synchronize' && steps.restore-cache.outputs.cache-hit == 'true' }}
+        if: ${{ github.event.action == 'synchronize' && steps.restore-cache.outputs.cache-hit == 'true' && steps.validate-title.outputs.valid == 'true' }}
         id: load-cache
         run: echo "SLACK_THREAD_TS=$(cat slack-thread-ts.txt)" >> $GITHUB_ENV
 
       - name: Add Reply for New Commits
-        if: ${{ github.event.action == 'synchronize' }}
+        if: ${{ github.event.action == 'synchronize' && steps.validate-title.outputs.valid == 'true' }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
