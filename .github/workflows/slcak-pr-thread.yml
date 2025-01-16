@@ -11,10 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up environment variables
-        id: set-vars
-        run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-
       - name: Validate PR title
         id: validate-title
         run: |
@@ -66,9 +62,10 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
           SLACK_THREAD_TS: ${{ env.SLACK_THREAD_TS }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           COMMITS=$(jq -r '.commits[].message' <<<"${{ github.event.pull_request }}" | sed 's/^/- /')
-          MESSAGE="🛠️ *New Commits Pushed to PR #${{ env.PR_NUMBER }}*:\n$COMMITS"
+          MESSAGE="🛠️ *New Commits Pushed to PR #$PR_NUMBER*:\n$COMMITS"
           curl -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H "Content-type: application/json" \
             --data "{\"channel\":\"$SLACK_CHANNEL_ID\",\"thread_ts\":\"$SLACK_THREAD_TS\",\"text\":\"$MESSAGE\"}" \
             https://slack.com/api/chat.postMessage
