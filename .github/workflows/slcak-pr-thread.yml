@@ -16,7 +16,7 @@ jobs:
         run: |
           if [[ ! "${{ github.event.pull_request.title }}" =~ CRM-[0-9]+ ]]; then
             echo "PR title does not match the required pattern."
-            exit 0
+            exit 1
           fi
 
       - name: Send Slack Notification on PR Opened
