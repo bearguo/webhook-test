@@ -17,7 +17,7 @@ jobs:
           if [[ ! "${{ github.event.pull_request.title }}" =~ CRM-[0-9]+ ]]; then
             echo "PR title does not match the required pattern."
             echo "::set-output name=valid::false"
-            exit 1
+            exit 0
           fi
           echo "::set-output name=valid::true"
 
