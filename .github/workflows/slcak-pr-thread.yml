@@ -64,7 +64,7 @@ jobs:
           SLACK_THREAD_TS: ${{ env.SLACK_THREAD_TS }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          MESSAGE="🛠️ *New Commits Pushed to PR #$PR_NUMBER"
+          MESSAGE="🛠️ *New Commits Pushed to PR #$PR_NUMBER*"
           curl -X POST -H "Authorization: Bearer $SLACK_BOT_TOKEN" -H "Content-type: application/json" \
             --data "{\"channel\":\"$SLACK_CHANNEL_ID\",\"thread_ts\":\"$SLACK_THREAD_TS\",\"text\":\"$MESSAGE\"}" \
             https://slack.com/api/chat.postMessage
